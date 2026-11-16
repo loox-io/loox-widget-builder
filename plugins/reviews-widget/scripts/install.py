@@ -5,14 +5,15 @@ adds the code as a Custom Liquid section, saves, then opens the page and checks 
 Shoppers never see the page: it only opens with ?view=<template>.
 
 Runs the browser through ego-browser, so it uses the person's own Shopify admin login. With --prepare-only it
-skips the browser and writes the paste-ready code (loader and store details added) for an install by hand.
+skips the browser and writes the paste-ready code (product details added) for an install by hand. The code never
+loads a Loox script: the store's Loox app embed does that.
 
 Usage:
     python3 install.py --store mystore.myshopify.com --code widget.html --name grid-tiles --password-file <file with the storefront password>
     python3 install.py --store mystore.com --code widget.liquid --name carousel --product my-product --space 12
     python3 install.py --store mystore.com --code widget.liquid --name carousel --prepare-only
 
-Prints one JSON line. status is one of: installed, installed_no_reviews, not_on_page, needs_password,
+Prints one JSON line. status is one of: installed, installed_no_reviews, no_app_embed, not_on_page, needs_password,
 bad_password, needs_login, not_shopify, no_product, template_not_created, editor_changed, liquid_error,
 too_big, error, prepared (--prepare-only).
 """
@@ -34,19 +35,31 @@ HERE = Path(__file__).resolve().parent
 DOCS = HERE.parent / "references" / "docs"
 TMP = Path(tempfile.gettempdir())
 LIMIT = 12_000  # Shopify's Custom Liquid box failed at ~13,100 chars and saved ~12,050 (tested 10-27)
-ASSIGNS = """{%- assign loox_meta = shop.metafields.loox.global_html_head -%}
-{%- assign loox_hash = loox_meta | split: '__LXV:' | last | split: ';' | first | strip -%}
-{%- assign loox_root = loox_meta | split: '__LXR:' | last | split: ';' | first | strip -%}
-{%- assign loox_client_id = loox_meta | split: '__LXC:' | last | split: ';' | first | strip -%}
-"""
-LOADER = """<script>window.LOOX = window.LOOX || {}; window.LOOX.root = window.LOOX.root || "{{ loox_root }}";</script>
-<script src="{{ loox_root }}/widget/{{ loox_client_id }}/reviews-widget/reviews-widget.js?h={{ loox_hash }}" defer></script>
-"""
+# Builds before 1.12.0 started with Loox's own wiring: four assigns read from a Loox shop metafield, a line that
+# set window.LOOX.root, and a tag that loaded reviews-widget.js. The store's Loox app embed does all of that (it
+# sets LOOX.root and LOOX.clientId, and loads the widget script once it sees a widget on the page), so the lines
+# only repeated it. They are taken out of any code that still has them.
+OLD_WIRING = [
+    r"[ \t]*\{%-?\s*assign\s+loox_(?:meta|hash|root|client_id)\s*=[^%]*%\}[ \t]*\n?",
+    r"[ \t]*<script>\s*window\.LOOX\s*=\s*window\.LOOX\s*\|\|\s*\{\};\s*window\.LOOX\.root\s*=[^<]*</script>[ \t]*\n?",
+    r"""[ \t]*<script\b[^>]*\bsrc\s*=\s*["']?\{\{-?\s*loox_root\s*-?\}\}/widget/[^>]*>\s*</script>[ \t]*\n?""",
+    r"""\s+client-id\s*=\s*(?:"\{\{-?\s*loox_client_id\s*-?\}\}"|'\{\{-?\s*loox_client_id\s*-?\}\}')""",
+]
+OLD_GUARD = r"\{%(-?)\s*if\s+loox_client_id\s*!=\s*blank\s+and\s+loox_root\s*!=\s*blank\s+and\s+product\s*(-?)%\}"
 
-# What the widget needs to know which store and product to load. A Loox theme block sets these for the
-# merchant; a Custom Liquid box does not, so bare roots get them here.
+
+def strip_old_wiring(code: str) -> tuple[str, bool]:
+    """Take the pre-1.12.0 Loox wiring out of widget code. Returns the code and whether anything was removed."""
+    before = code
+    for pattern in OLD_WIRING:
+        code = re.sub(pattern, "", code)
+    code = re.sub(OLD_GUARD, r"{%\1 if product \2%}", code)
+    return code, code != before
+
+
+# What the widget needs to know which product to load. A Loox theme block sets these for the merchant; a Custom
+# Liquid box does not, so bare roots get them here. The store itself comes from the Loox app embed, never from the code.
 ROOT_ATTRS = {
-    "client-id": '"{{ loox_client_id }}"',
     "surface": '"product"',
     "product-id": '"{{ product.id }}"',
     "reviews-limit": '"20"',
@@ -140,15 +153,17 @@ UNSAFE = [
 def unsafe_code(code: str) -> list[str]:
     """WARNING notes for code that is risky on a live store, each with its line. See concepts.md, "What a script must not do"."""
     notes = []
-    # A script tag is read whole, since its src can sit on a later line. Only the Loox loader's address passes:
-    # it must start with {{ loox_root }}/widget/, so "loox_root" somewhere in another address doesn't count.
+    # A script tag is read whole, since its src can sit on a later line. No script address passes: widget code
+    # loads no script at all, and the widget's own script comes from the store's Loox app embed.
     for m in re.finditer(r"<script\b[^>]*>", code, re.I):
         src = re.search(r"""\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))""", m.group(0), re.I)
         if not src:
             continue
         address = next(g for g in src.groups() if g is not None).strip()
-        if not re.match(r"\{\{-?\s*loox_root\s*-?\}\}/widget/", address):
-            n = code.count("\n", 0, m.start()) + 1
+        n = code.count("\n", 0, m.start()) + 1
+        if re.match(r"\{\{-?\s*loox_root\s*-?\}\}/widget/", address):
+            notes.append(f"WARNING: line {n} loads the Loox widget script. The Loox app embed already loads the widget script: remove this line")
+        else:
             notes.append(f"WARNING: line {n} loads a script from outside Loox: `{address[:70]}`. Safer: write the script inside the "
                          "widget, or leave it out. Keep it only if the person asked for it, and list it under Overrides")
     for n, line in enumerate(code.splitlines(), 1):
@@ -193,6 +208,9 @@ def prepare(code: str, template: str) -> tuple[str, list[str]]:
         if filled:
             notes.append("filled section settings with their defaults: " + ", ".join(filled))
     code = re.sub(r"{{-?\s*section\.id\s*-?}}", template, code)
+    code, stripped = strip_old_wiring(code)
+    if stripped:
+        notes.append("removed the Loox loader lines from an older build: the store's Loox app embed loads the widget script")
     if re.search(r"\b(section|block)\.settings\.", code):
         notes.append("WARNING: code reads section/block settings with no default, which are empty in Custom Liquid")
     roots = re.findall(r"<loox-reviews-widget\b[^>]*>", code)
@@ -213,12 +231,7 @@ def prepare(code: str, template: str) -> tuple[str, list[str]]:
         notes.append("WARNING: no <loox-reviews-widget> root in the code")
     elif any(not has_attr(r, k) for r in roots for k in ROOT_ATTRS):
         code = re.sub(r"<loox-reviews-widget\b[^>]*>", fix_root, code)
-        notes.append("added store and product details to the widget root")
-    if "reviews-widget.js" not in code:
-        code = LOADER + code
-        notes.append("added the Widget 2.0 loader script")
-    if "assign loox_client_id" not in code:
-        code = ASSIGNS + code
+        notes.append("added product details to the widget root")
     return f'<div data-lx-install="{template}">\n{code.strip()}\n</div>\n', notes
 
 
