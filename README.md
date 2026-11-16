@@ -45,26 +45,28 @@ Set by Loox: how reviews load, sort and filter, labels, accessibility, and how s
 
 ## Install
 
+Every step here runs in a terminal, so your assistant can do the install for you. Ask it to install the skill from this README.
+
 **Claude Code**
 
 ```
-/plugin marketplace add loox-io/loox-widget-builder
-/plugin install reviews-widget@loox-widget-builder
+claude plugin marketplace add loox-io/loox-widget-builder
+claude plugin install reviews-widget@loox-widget-builder
 ```
 
-Start a new session after installing.
+Or type the same two inside Claude Code: `/plugin marketplace add loox-io/loox-widget-builder`, then `/plugin install reviews-widget@loox-widget-builder`. Start a new session after installing.
 
-**Codex, Cursor and Antigravity**
+**Codex, Cursor, Antigravity and other assistants**
 
-The skill is also in this repo as one plain folder: [`skills/widget-builder`](skills/widget-builder). Copy that folder to where your assistant keeps its skills. Make the `skills` folder if it isn't there yet.
+The skill is also in this repo as one plain folder: [`skills/widget-builder`](skills/widget-builder). Copy that folder to where your assistant keeps its skills.
 
-| Assistant | Put the folder here |
+| Assistant | Skills folder |
 | --- | --- |
-| Codex | `~/.codex/skills/widget-builder/` |
-| Cursor | `~/.cursor/skills/widget-builder/` |
-| Antigravity | `~/.gemini/antigravity/skills/widget-builder/` |
+| Codex | `~/.codex/skills` |
+| Cursor | `~/.cursor/skills` |
+| Antigravity | `~/.gemini/antigravity/skills` |
 
-For example, for Codex:
+Mac and Linux, for Codex. For another assistant, use its folder from the table:
 
 ```
 git clone https://github.com/loox-io/loox-widget-builder
@@ -72,7 +74,15 @@ mkdir -p ~/.codex/skills
 cp -R loox-widget-builder/skills/widget-builder ~/.codex/skills/
 ```
 
-Start a new session, then ask: "build me a reviews widget". Needs Python 3.9 or newer.
+Windows (PowerShell), for Codex:
+
+```
+git clone https://github.com/loox-io/loox-widget-builder
+New-Item -ItemType Directory -Force "$HOME\.codex\skills" | Out-Null
+Copy-Item -Recurse -Force "loox-widget-builder\skills\widget-builder" "$HOME\.codex\skills\"
+```
+
+Start a new session, then ask: "build me a reviews widget". Needs Git, and Python 3.9 or newer.
 
 ## Quickstart
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.12.1
+
+- The skill now calls itself Loox Widget Builder everywhere.
+- README: install steps you can run from a terminal, for every assistant, on Mac and Windows.
+
 ## v1.12.0
 
 - The widget code is now only the widget. It no longer loads a Loox script or reads Loox's store details: the Loox app embed on your store does that.

@@ -7,10 +7,10 @@ description: >-
   reviews", "a bento grid of reviews", "a widget in the Loox look"). Proposes versions and lets the person
   pick, builds the chosen one from the Loox widget docs, installs it on a hidden page, hands over the code,
   and ends with a short report on where it got stuck.
-version: 1.12.0
+version: 1.12.1
 ---
 
-# Widget build
+# Loox Widget Builder
 
 Builds a Loox Reviews Widget 2.0 widget with the person and previews it live on a hidden page of their store. What matters: the widget is true to what Loox can show, it looks good on a phone, and the report at the end says honestly where the docs fell short.
 
@@ -28,7 +28,7 @@ Everything this skill needs ships in the plugin (`${CLAUDE_PLUGIN_ROOT}`):
 
 ## 1. Open and check
 
-Open with the skill's name and version from the frontmatter ("Widget build v<version>") and three lines on what happens: you describe the widget and pick one of a few versions, you see it with your store's real reviews on a page on this computer until you like it, then you get it on a hidden page of your store or as code to paste.
+Open with the skill's name and version from the frontmatter ("Loox Widget Builder v<version>") and three lines on what happens: you describe the widget and pick one of a few versions, you see it with your store's real reviews on a page on this computer until you like it, then you get it on a hidden page of your store or as code to paste.
 
 ```
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/preflight.py"
@@ -239,7 +239,7 @@ Lead with the page link. With "Code and steps" the code and paste steps already 
 When they're done, write a short report to `~/loox-widget-reports/<YYYY-MM-DD>-<name>.md` and show it. Loox reads these to improve the docs and this skill, so be honest and specific.
 
 ```
-# Widget build report: <name>, <date>
+# Widget Builder report: <name>, <date>
 Who: <person>. Store: <store>. Plugin: reviews-widget <version>.
 Asked for: <their words>. Pictures: <how many, one line each>.
 Versions offered: <one line each>. Picked: <which>.
