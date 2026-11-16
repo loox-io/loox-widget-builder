@@ -54,8 +54,7 @@ Start a new session after installing.
 
 **Codex, Cursor and Antigravity**
 
-1. Download the skill zip from the [latest release](https://github.com/loox-io/loox-widget-builder/releases/latest).
-2. Unzip, and put the `widget-builder` folder where your assistant keeps its skills. Make the `skills` folder if it isn't there yet.
+The skill is also in this repo as one plain folder: [`skills/widget-builder`](skills/widget-builder). Copy that folder to where your assistant keeps its skills. Make the `skills` folder if it isn't there yet.
 
 | Assistant | Put the folder here |
 | --- | --- |
@@ -63,7 +62,15 @@ Start a new session after installing.
 | Cursor | `~/.cursor/skills/widget-builder/` |
 | Antigravity | `~/.gemini/antigravity/skills/widget-builder/` |
 
-3. Start a new session, then ask: "build me a reviews widget". Needs Python 3.9 or newer.
+For example, for Codex:
+
+```
+git clone https://github.com/loox-io/loox-widget-builder
+mkdir -p ~/.codex/skills
+cp -R loox-widget-builder/skills/widget-builder ~/.codex/skills/
+```
+
+Start a new session, then ask: "build me a reviews widget". Needs Python 3.9 or newer.
 
 ## Quickstart
 
