@@ -264,7 +264,10 @@ def read_store(host: str, product: str, password: str | None, limit: int) -> dic
     return {"host": host, "product": product, "product_id": pid, "title": html.unescape(t.group(1)) if t else product,
             "client_id": cid, "root": root, "version": ver, "read_at": datetime.now(timezone.utc).isoformat(),
             "sort": sort, "limit": limit, "notes": notes, "display": settings_from_bundle(js), "data": data,
-            "icons": icons_from_page(page), "parts": parts_from_bundle(js)}
+            "icons": icons_from_page(page), "parts": parts_from_bundle(js),
+            # True when the product page carries Loox's core script. A widget built here loads nothing itself, so
+            # with this off it shows nothing on the store.
+            "app_embed": bool(CORE_SCRIPT.search(page))}
 
 
 def icons_from_page(page_html: str) -> str:
@@ -312,6 +315,23 @@ return Promise.resolve(new Response(JSON.stringify(d),{status:200,headers:{'Cont
 
 def live_head(answer: dict) -> str:
     return LIVE_JS % json.dumps(answer, ensure_ascii=False).replace("</", "<\\/")
+
+
+# The core script the Loox app embed (or an older Loox install) puts on every storefront page: /widget/<id>/loox.<time>.js.
+CORE_SCRIPT = re.compile(r"widget\\?/[A-Za-z0-9_-]+\\?/loox\.\d+\.js")
+
+
+def loader_head(store: dict) -> str:
+    """What the store's Loox app embed does on a real page: say which store this is and load the widget script.
+
+    A local page has no app embed, so the page shell carries it. The widget code never does.
+    """
+    root = loox_root(store["root"])  # checked again here: store-data.json is a file on disk, and this becomes a script address
+    cid, ver = str(store["client_id"]), urllib.parse.quote(str(store.get("version") or ""))
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", cid):
+        raise StoreError("fetch_failed", f"the store's Loox id is not an id: {cid[:40]!r}")
+    return (f"<script>window.LOOX = window.LOOX || {{}}; window.LOOX.root = {json.dumps(root)}; window.LOOX.clientId = {json.dumps(cid)};</script>"
+            f'<script src="{html.escape(root, quote=True)}/widget/{cid}/reviews-widget/reviews-widget.js?h={ver}" defer></script>')
 
 
 def iso(ms: int | None) -> str | None:
@@ -694,7 +714,7 @@ def sheet(code: str, store: dict, real: list[dict], average: float, count: int, 
         avg = opt.get("average", round(sum(r["rating"] for r in revs) / len(revs), 1) if revs else 0)
         body, n = render(code, store, revs, avg, opt.get("count", len(revs)), opt.get("only_photos"))
         out_notes += n
-        doc = html.escape(page(body, label, extra_head=live_head(answer_for([to_api(r) for r in revs])),
+        doc = html.escape(page(body, label, extra_head=live_head(answer_for([to_api(r) for r in revs])) + loader_head(store),
                                icons=store.get("icons", "")), quote=True)
         info = notes.get(key) or {}
         status = info.get("status") if info.get("status") in PILLS else "unchecked"
@@ -766,7 +786,8 @@ def main() -> int:
             store = read_store(host, product, a.password, limit)
             cache.write_text(json.dumps(store, ensure_ascii=False, indent=1), encoding="utf-8")
             print(json.dumps({"status": "ready", "hidden_by_settings": hidden_by_settings(store.get("display") or {}),
-                              "reviews": len(store["data"].get("reviews", [])), "sort": store["sort"]}))
+                              "reviews": len(store["data"].get("reviews", [])), "sort": store["sort"],
+                              "app_embed": store["app_embed"]}))
             return 0
         code = a.code.read_text(encoding="utf-8")
         bad = liquid_problems(code)
@@ -780,7 +801,7 @@ def main() -> int:
             return 1
         limit = max(1, min(a.limit, 50))
         store = json.loads(cache.read_text(encoding="utf-8")) if cache.exists() and not a.refresh else None
-        if not store or (store.get("host"), store.get("product"), store.get("limit")) != (host, product, limit) or "display" not in store or "icons" not in store or "parts" not in store:
+        if not store or (store.get("host"), store.get("product"), store.get("limit")) != (host, product, limit) or "display" not in store or "icons" not in store or "parts" not in store or "app_embed" not in store:
             store = read_store(host, product, a.password, limit)
             cache.write_text(json.dumps(store, ensure_ascii=False, indent=1), encoding="utf-8")
         data = full_links(store["data"])  # here, not at the read, so a store-data.json from an older run works too
@@ -790,7 +811,7 @@ def main() -> int:
         body, notes = render(code, store, real, average, count)
         notes += store.get("notes", [])
         notes += unsafe_code(code)
-        (a.out / "index.html").write_text(page(body, f"Local preview: {store['title']}", extra_head=live_head({**answer_for(data.get("reviews", [])), **data}),
+        (a.out / "index.html").write_text(page(body, f"Local preview: {store['title']}", extra_head=live_head({**answer_for(data.get("reviews", [])), **data}) + loader_head(store),
                                                icons=store.get("icons", "")), encoding="utf-8")
         if not store.get("icons"):
             notes.append("WARNING: no rating icons on the product page, so stars draw blank here. Check them on the hidden page")
@@ -801,7 +822,8 @@ def main() -> int:
                   "serve": f'python3 -m http.server {port} --bind 127.0.0.1 --directory "{a.out}"' if port else None,
                   "url": f"http://127.0.0.1:{port}/index.html" if port else file_url, "file_url": file_url, "reviews": len(real),
                   "with_photos": sum(1 for r in real if r.get("media")), "total_on_store": count, "sort": store["sort"],
-                  "unknown_parts": unknown_tags(code, set(store.get("parts") or [])), "hidden_by_settings": hidden_by_settings(store.get("display") or {})}
+                  "unknown_parts": unknown_tags(code, set(store.get("parts") or [])), "hidden_by_settings": hidden_by_settings(store.get("display") or {}),
+                  "app_embed": store["app_embed"]}
         if a.states:
             look = json.loads(a.look.read_text(encoding="utf-8")) if a.look and a.look.exists() else None
             state_notes = json.loads(a.notes.read_text(encoding="utf-8")) if a.notes and a.notes.exists() else None

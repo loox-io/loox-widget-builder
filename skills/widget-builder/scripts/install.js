@@ -143,7 +143,9 @@ try {
     const tags = [...box.querySelectorAll("*"), ...[...box.querySelectorAll("template")].flatMap((tp) => [...tp.content.querySelectorAll("*")])]
       .map((e) => e.tagName.toLowerCase()).filter((tg) => tg.startsWith("lxrw-"));
     const unknownParts = [...new Set(tags)].filter((tg) => !customElements.get(tg));
-    return { found: true, unknownParts, widgets: all(box, "loox-reviews-widget").length, cards: all(box, "lxrw-review-card-provider").length,
+    // The store's Loox app embed sets LOOX.root on every page. Without it nothing loads the widget script.
+    const embed = !!(window.LOOX && window.LOOX.root);
+    return { found: true, embed, unknownParts, widgets: all(box, "loox-reviews-widget").length, cards: all(box, "lxrw-review-card-provider").length,
       liquidError: /Liquid error/i.test(box.textContent), height: Math.round(box.getBoundingClientRect().height) };
   }, CFG.template);
   const shots = {};
@@ -175,8 +177,10 @@ try {
   const status = liquidError ? "liquid_error_on_page"
     : d.found && d.cards > 0 && m.cards > 0 ? "installed"
     : d.found && d.cards > 0 ? "phone_failed"
+    : d.found && !d.embed ? "no_app_embed"
     : d.found ? "installed_no_reviews" : "not_on_page";
   const hints = {
+    no_app_embed: "The widget is on the page but the Loox app embed is off, so nothing loads the widget script. Turn it on: Online Store > Customize > App embeds > Loox, then Save.",
     liquid_error_on_page: "The page shows a Liquid error inside the widget. Look at the screenshot for the message.",
     phone_failed: "Desktop shows the cards but the phone check found none: a pop-up or slow loading on the phone, not missing reviews. Look at the phone screenshot.",
     installed_no_reviews: "The widget is on the page but shows no reviews: check the product has published reviews and Widget 2.0 is on for this store.",

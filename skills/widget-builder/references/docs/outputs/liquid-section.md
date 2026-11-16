@@ -11,27 +11,17 @@ A `{% schema %}` block or `section.settings` inside a Custom Liquid box gives "T
 
 ## What the section does
 
-1. Reads three values Loox writes into the shop's metafield `loox.global_html_head`: the server root (`__LXR:`), the version hash (`__LXV:`) and the store id (`__LXC:`).
-2. Tells the widget where the Loox server is (`window.LOOX.root`), then loads the widget script. Without the first line the widget can load before the Loox script sets that address, and then it shows no reviews.
-3. Writes `<loox-reviews-widget>` with the product's id, rating, count and reviews, then the composition.
+Writes `<loox-reviews-widget>` with the product's id, rating, count and reviews, then the composition. Nothing else: the store's Loox app embed tells the widget which store it is on and loads the widget script. The code never loads a Loox script and never reads a Loox shop metafield.
 
 ## Full file
 
 ```liquid
-{%- assign loox_meta = shop.metafields.loox.global_html_head -%}
-{%- assign loox_hash = loox_meta | split: '__LXV:' | last | split: ';' | first | strip -%}
-{%- assign loox_root = loox_meta | split: '__LXR:' | last | split: ';' | first | strip -%}
-{%- assign loox_client_id = loox_meta | split: '__LXC:' | last | split: ';' | first | strip -%}
 {%- assign loox_feed = product.metafields.loox.review_feed.value -%}
 
-{%- if loox_client_id != blank and loox_root != blank and product -%}
-  <script>window.LOOX = window.LOOX || {}; window.LOOX.root = window.LOOX.root || "{{ loox_root }}";</script>
-  <script src="{{ loox_root }}/widget/{{ loox_client_id }}/reviews-widget/reviews-widget.js?h={{ loox_hash }}" defer></script>
-
+{%- if product -%}
   <div class="loox-custom-{{ section.id }} page-width">
     {%- if section.settings.heading != blank -%}<h2>{{ section.settings.heading }}</h2>{%- endif -%}
     <loox-reviews-widget
-      client-id="{{ loox_client_id }}"
       widget-id="plugin-AGENT-RANDOM"
       surface="product"
       product-id="{{ product.id }}"
@@ -76,14 +66,8 @@ A `{% schema %}` block or `section.settings` inside a Custom Liquid box gives "T
 Tested in Custom Liquid boxes on a live store. Values that were section settings are written in.
 
 ```liquid
-{%- assign loox_meta = shop.metafields.loox.global_html_head -%}
-{%- assign loox_hash = loox_meta | split: '__LXV:' | last | split: ';' | first | strip -%}
-{%- assign loox_root = loox_meta | split: '__LXR:' | last | split: ';' | first | strip -%}
-{%- assign loox_client_id = loox_meta | split: '__LXC:' | last | split: ';' | first | strip -%}
-<script>window.LOOX = window.LOOX || {}; window.LOOX.root = window.LOOX.root || "{{ loox_root }}";</script>
-<script src="{{ loox_root }}/widget/{{ loox_client_id }}/reviews-widget/reviews-widget.js?h={{ loox_hash }}" defer></script>
 <div class="lxr-box page-width">
-  <loox-reviews-widget client-id="{{ loox_client_id }}" widget-id="plugin-AGENT-RANDOM" surface="product" product-id="{{ product.id }}"
+  <loox-reviews-widget widget-id="plugin-AGENT-RANDOM" surface="product" product-id="{{ product.id }}"
     {% if product.metafields.loox.avg_rating != blank %}average-rating="{{ product.metafields.loox.avg_rating }}"{% endif %}
     {% if product.metafields.loox.num_reviews != blank %}review-count="{{ product.metafields.loox.num_reviews }}"{% endif %}
     reviews-limit="20" only-photos="false">
@@ -102,11 +86,12 @@ With the reviews slot left empty, the widget loads the reviews itself after the 
 - CSS selectors start with `.loox-custom-{{ section.id }}`, so two sections on one page do not clash.
 - Tokens are set on a wrapper inside `<loox-reviews-widget>`, as in style.md.
 - A carousel's script stays scoped to this section: `document.querySelectorAll('.loox-custom-{{ section.id }} .carousel')`.
-- The section shows nothing when Loox's values are missing (Loox not installed) or the page has no product.
+- The section shows nothing when the page has no product, or the app embed is off.
 - With an empty `loox_feed`, the widget loads the reviews itself after the page loads.
 
 ## Requirements on the store
 
+- The Loox app embed is on (Online Store > Customize > App embeds > Loox).
 - Loox installed, with the reviews metafield sync on (it fills `loox.review_feed`, `loox.avg_rating`, `loox.num_reviews`).
 - Widget 2.0 available on the Loox server for the store.
 

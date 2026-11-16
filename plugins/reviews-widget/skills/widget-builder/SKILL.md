@@ -7,7 +7,7 @@ description: >-
   reviews", "a bento grid of reviews", "a widget in the Loox look"). Proposes versions and lets the person
   pick, builds the chosen one from the Loox widget docs, installs it on a hidden page, hands over the code,
   and ends with a short report on where it got stuck.
-version: 1.11.0
+version: 1.12.0
 ---
 
 # Widget build
@@ -49,7 +49,7 @@ Then read which parts the store's own Loox settings switch off, before you propo
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/local_preview.py" --store <store> --product <handle> --settings-only --out /tmp/loox-widget-build/<name>/local [--password-file <file>]
 ```
 
-`hidden_by_settings` lists each setting that hides a part (for example the write-a-review button). A widget can't turn a part back on: only the merchant's setting can. Keep the list for step 4.
+`hidden_by_settings` lists each setting that hides a part (for example the write-a-review button). A widget can't turn a part back on: only the merchant's setting can. Keep the list for step 4. `app_embed` false: stop and ask the person to turn on Online Store > Customize > App embeds > Loox first.
 
 Then read the store's look.
 
@@ -87,7 +87,7 @@ Ask for a yes on any substitute you offered. If they say "you choose", build the
 ## 5. Build on a local page
 
 - Start from the recipe's code and change it to the chosen version. Every card keeps photo, stars and text, with the verified mark next to the name.
-- Write one Custom Liquid file per version to `/tmp/loox-widget-build/<name>/widget.liquid`. Use the Custom Liquid form in `references/docs/outputs/liquid-section.md`: no `{% schema %}`. The installer adds the Loox loader and the store and product details.
+- Write one Custom Liquid file per version to `/tmp/loox-widget-build/<name>/widget.liquid`. Use the Custom Liquid form in `references/docs/outputs/liquid-section.md`: no `{% schema %}`. The code carries no loader: the store's Loox app embed loads the script.
 - **A widget ID, set once.** Give `<loox-reviews-widget>` `widget-id="plugin-<your name>-<random>"`, like `plugin-claude-3f9a1c7e` (random part: `python3 -c "import secrets;print(secrets.token_hex(4))"`). Without it, two widgets on one page can get the same reviews. Make it on the first write, keep it through every round, install and handover, and give each version its own.
 - **Loox's own parts for every state.** Keep Loox's part for each thing a review can carry and only style it: the verified, incentivized and rewarded labels next to the name (`components/review-card.md`), the store reply where the design has room, and `lxrw-empty-state` for a product with no reviews. **No reviews is never skipped:** when the store's settings leave `lxrw-empty-state` blank (the write button is hidden), design your own message and list it under "Overrides". The merchant's Loox settings then decide what they say and whether they show: no-reviews text and link, write button, labels, icons, language. If the person asks for something else (their own stars, for example), build it and list it under "Overrides" in the report.
 - **Never make up content.** No numbers, quotes, names or stats from a picture. A part that doesn't exist stays out and goes in the "left out" list.
@@ -154,6 +154,7 @@ It makes a new product template (shoppers never see it, it opens only with `?vie
 | `installed` | Open both screenshots with Read and check them against the checklist |
 | `phone_failed` | Desktop works, the phone check found no cards. Usually a pop-up or slow loading on the phone, not missing reviews. Look at the phone screenshot and install again under a new name |
 | `liquid_error_on_page` | The page shows a Liquid error inside the widget. Read it on the screenshot, fix the code, install again |
+| `no_app_embed` | The Loox app embed is off. Ask the person to turn it on (App embeds > Loox), then run it again |
 | `installed_no_reviews` | Look at the screenshot. Usual causes: the product has no published reviews, or Widget 2.0 isn't on for this store yet. Say so plainly |
 | `not_on_page` | Open the `editor` link with ego lite and read Shopify's error |
 | `liquid_error` | Fix the code (`detail` says what's unclosed) and run again |
@@ -195,7 +196,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/install.py" --store <store> --code /tmp/l
   --name <name> --product <handle> --prepare-only
 ```
 
-It runs the same code checks and fixes as the install (`liquid_error` and `too_big` mean the same as above) and returns `prepared` with the `template` name, the `file` that holds the paste-ready code (loader included) and the `preview_url` of the hidden page. Use `preview_url` as it is; never build the link yourself. `unknown_parts` here comes from the docs, not the live store: fix every name it lists, exactly as above, before you send anything.
+It runs the same code checks and fixes as the install (`liquid_error` and `too_big` mean the same as above) and returns `prepared` with the `template` name, the `file` that holds the paste-ready code and the `preview_url` of the hidden page. Use `preview_url` as it is; never build the link yourself. `unknown_parts` here comes from the docs, not the live store: fix every name it lists, exactly as above, before you send anything.
 
 Send one message with the code block from `file` (labeled as in step 8) and these steps, with the template name and link filled in:
 
@@ -230,7 +231,7 @@ Lead with the page link. With "Code and steps" the code and paste steps already 
 
 - One line on how it looks on desktop and on the phone. Show both screenshots. If there was no preview, skip this line and say it wasn't previewed.
 - **Left out**: everything they asked for that isn't in it, and why. "Nothing" if nothing.
-- **The code itself**, pasted into the reply as one code block (not a file path), labeled on its first line with where it goes. Before the person has seen it on the hidden page, the label is `Paste into the hidden template <template>: Online Store > Customize > Products > <template> > Add section > Custom Liquid`. Only after they've seen it there and want to keep it, give the live label: `Paste into Custom Liquid: Online Store > Customize > product page > Add section > Custom Liquid`. Copy the code from the `file` the install or `--prepare-only` returned, because that one carries the loader. Never hand over the file from step 5: it has no loader and shows nothing. No mock or explanation inside the block.
+- **The code itself**, pasted into the reply as one code block (not a file path), labeled on its first line with where it goes. Before the person has seen it on the hidden page, the label is `Paste into the hidden template <template>: Online Store > Customize > Products > <template> > Add section > Custom Liquid`. Only after they've seen it there and want to keep it, give the live label: `Paste into Custom Liquid: Online Store > Customize > product page > Add section > Custom Liquid`. Copy the code from the `file` the install or `--prepare-only` returned. No mock or explanation inside the block.
 - One question: keep it, or what to change. A change goes back to the local page (step 5), and goes on the store again only once they like it: with "Install it for me" as a new page, with "Code and steps" by replacing the code in the same box.
 
 ## 9. The report

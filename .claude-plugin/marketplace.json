@@ -14,7 +14,7 @@
       "name": "reviews-widget",
       "source": "./plugins/reviews-widget",
       "description": "Build a Loox reviews widget from a request or a picture: pick one of a few proposed versions, preview it with your store's real reviews, put it on a hidden page of your store or get the code, and end with a short report on where it got stuck.",
-      "version": "1.11.0",
+      "version": "1.12.0",
       "author": {
         "name": "Loox",
         "email": "support@loox.io"

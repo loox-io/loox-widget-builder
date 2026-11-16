@@ -111,6 +111,7 @@ Anything that moves stops when a shopper touches it, has a calm version for shop
 
 - An AI assistant: Claude Code, Codex, Cursor or Antigravity.
 - A Shopify store with Loox, and admin access using your own login.
+- The Loox app embed turned on: Online Store > Customize > App embeds > Loox.
 - For the hidden page: your Shopify admin in English.
 - Nice to have: a browser your assistant can use.
 
