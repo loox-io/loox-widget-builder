@@ -6,6 +6,8 @@ Build your Loox reviews widget with your AI assistant. Describe it in a sentence
 
 [Install](#install) · [Quickstart](#quickstart) · [What you can change](#what-you-can-change) · [How the build goes](#how-the-build-goes) · [Loox widget docs](plugins/reviews-widget/references/docs/index.md)
 
+https://github.com/user-attachments/assets/e658119f-2c19-4479-a747-b7d461d60bed
+
 ## Why not just ask AI for a widget?
 
 You can ask any AI to build a reviews widget, and paste the code into your theme. It works fine on day one, until it doesn't. You're left with a static snapshot: zero updates, no bug fixes, and none of your store's business logic.
