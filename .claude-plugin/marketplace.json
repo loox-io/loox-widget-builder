@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-marketplace.json",
+  "name": "loox-widget-builder",
+  "owner": {
+    "name": "Loox",
+    "email": "support@loox.io"
+  },
+  "description": "Loox Widget Builder: build your Loox reviews widget with your AI assistant.",
+  "metadata": {
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "reviews-widget",
+      "source": "./plugins/reviews-widget",
+      "description": "Build a Loox reviews widget from a request or a picture: pick one of a few proposed versions, preview it with your store's real reviews, put it on a hidden page of your store or get the code, and end with a short report on where it got stuck.",
+      "version": "1.11.0",
+      "author": {
+        "name": "Loox",
+        "email": "support@loox.io"
+      },
+      "keywords": [
+        "reviews-widget",
+        "reviews",
+        "shopify",
+        "storefront",
+        "liquid",
+        "design",
+        "loox"
+      ],
+      "category": "productivity"
+    }
+  ]
+}
