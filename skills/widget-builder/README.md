@@ -1,7 +1,7 @@
 # Loox Widget Builder
 
 Build a Loox reviews widget for your Shopify store with your AI assistant: describe it or paste a
-picture, pick one of a few versions, see it with your store's real reviews, and get the code. Version 1.12.1.
+picture, pick one of a few versions, see it with your store's real reviews, and get the code. Version 1.12.2.
 
 ## Install
 
