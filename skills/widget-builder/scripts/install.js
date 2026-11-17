@@ -96,7 +96,11 @@ try {
     const code = await fs.readFile(file, "utf8");
     lines = await snap(true);
     const t = find(lines, /(?:text|button|heading|anchor|option|menuitem|tab) "Template"/), f = find(lines, /(?:text|button|heading|anchor|option|menuitem|tab) "Footer"/, t + 1);
-    const adds = lines.slice(t, f > 0 ? f : undefined).map((l) => l.match(/button "Add section" \[ref=(\d+)/)).filter(Boolean);
+    // The header and footer groups are shared by every page of the live store. A section goes in only when both
+    // ends of this template's own area are found on screen. Without them, never guess: stop and add nothing.
+    if (t < 0 || f < 0) { out({ ...base, status: "editor_changed", detail: "Couldn't tell where this page's own sections end and the shared footer begins, so nothing was added. Use the code and the paste steps instead.", view: view(lines) }); await end(); }
+    const adds = lines.slice(t, f).map((l) => l.match(/button "Add section" \[ref=(\d+)/)).filter(Boolean);
+    if (!adds.length) { out({ ...base, status: "editor_changed", detail: "No \"Add section\" button inside this page's own area, so nothing was added. Use the code and the paste steps instead.", view: view(lines.slice(t, f)) }); await end(); }
     await page.click("@" + adds[adds.length - 1][1], { label: "Add section at end" });
     await page.waitForTimeout(2500);
     lines = await snap();

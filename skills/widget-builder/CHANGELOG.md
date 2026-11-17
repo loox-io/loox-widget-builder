@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.12.2
+
+- "Install it for me" is stricter about where it adds the widget. It only adds the section inside the hidden page's own area. If it can't tell where that area ends, it stops, adds nothing, and gives you the code and the paste steps.
+
 ## v1.12.1
 
 - The skill now calls itself Loox Widget Builder everywhere.

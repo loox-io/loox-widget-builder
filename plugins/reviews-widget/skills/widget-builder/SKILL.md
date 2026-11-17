@@ -7,7 +7,7 @@ description: >-
   reviews", "a bento grid of reviews", "a widget in the Loox look"). Proposes versions and lets the person
   pick, builds the chosen one from the Loox widget docs, installs it on a hidden page, hands over the code,
   and ends with a short report on where it got stuck.
-version: 1.12.1
+version: 1.12.2
 ---
 
 # Loox Widget Builder
